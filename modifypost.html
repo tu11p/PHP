@@ -1,0 +1,295 @@
+<?php 
+include $_SERVER['DOCUMENT_ROOT']."/showpost.php"; 
+$index = $_GET[idx];
+$page = $_GET[page];
+$term = $_GET[term];
+$seek = $_GET[search];
+
+if(!isset($_SESSION['islogin']))
+{
+	echo "<script> alert('로그인이 필요합니다.'); location.href='./homepage.html'; </script>";
+	exit;
+}
+
+$upload_file = showpost("select * from uploadfile where postnum = $index");
+$count_file = $upload_file->num_rows;
+?>
+<!DOCTYPE html>
+<html>
+<head>
+	<title> 게시글 수정하기 </title>
+	<link rel="stylesheet" type="text/css" href="./uploadcss.css" >
+	<script src="./aboutupload.js"></script>
+	<style type="text/css">
+		div#contents {
+			border: 1px;
+			background-color: #F3F0F0;
+			width: 80%;
+			height: 1000;
+			margin-left: auto;
+			margin-right: auto;
+		}
+	</style>
+	<script>
+		/*
+		$(document).ready(function () {
+
+			$("input[type=file]").change(function () {
+				
+				//
+				if (is_error) {
+					//이전에 추가한거 삭제
+					var before_uploaded = now_file + 1;
+					while(need_delete = document.getElementById("button"+before_uploaded))
+					{
+						upload_div.removeChild(need_delete.previousSibling.previousSibling.previousSibling); //파일 번호
+						upload_div.removeChild(need_delete.previousSibling.previousSibling); //text => 파일이름
+						upload_div.removeChild(need_delete.previousSibling); // 공백 문자
+						upload_div.removeChild(need_delete.nextSibling); // 개행 문자
+						upload_div.removeChild(need_delete); //버튼
+						before_uploaded++;
+					}
+				} else{
+					var upload_div = document.getElementById("show_file_input");
+
+					//이전에 추가한거 삭제
+					var before_uploaded = now_file + 1;
+					while(need_delete = document.getElementById("button"+before_uploaded))
+					{
+						upload_div.removeChild(need_delete.previousSibling.previousSibling.previousSibling); //파일 번호
+						upload_div.removeChild(need_delete.previousSibling.previousSibling); //text => 파일이름
+						upload_div.removeChild(need_delete.previousSibling); // 공백 문자
+						upload_div.removeChild(need_delete.nextSibling); // 개행 문자
+						upload_div.removeChild(need_delete); //버튼
+						before_uploaded++;
+					}
+
+					for (var i = now_file; i < files_number; i++) { //총 업로드한 파일의 크기
+						file = files[i - now_file];
+						var new_child = document.createElement("input");
+
+						var new_text = document.createTextNode((i + 1)+") ");
+						var new_text2 = document.createTextNode(" ");
+						new_child.setAttribute("type", "text");
+						new_child.setAttribute("readonly", "readonly");
+						new_child.setAttribute("value", file.name);
+
+						var new_button = document.createElement("input");
+						new_button.setAttribute("type","button");
+						new_button.setAttribute("value","삭제");
+						new_button.setAttribute("id","button"+ (i + 1));
+						new_button.setAttribute("onclick", "");
+
+						upload_div.appendChild(new_text);
+						upload_div.appendChild(new_child);
+						upload_div.appendChild(new_text2);
+						upload_div.appendChild(new_button);
+						upload_div.appendChild(document.createElement("br"));
+					}
+				}
+				
+			});
+		});
+		*/
+		function file_change(now_file){
+			//파일의 정보를 담을 변수들
+			var fileInput = document.getElementById("user_will_upload_file");
+			var files = fileInput.files;
+			var file;
+
+			//업로드한 파일이 요구조건에 맞고하는 가 확인용
+			var is_error = 0; //0 : 정상 , 1 : 에러 문제 발생
+
+			if(files.length == 0)
+			{
+				return;
+			}
+
+			var files_number = files.length + now_file; //총 파일의 개수
+			var file_size = 0; //현재 업로드 된 파일의 개수의 크기를 저장할 변수
+
+			var file_num = 1; //추출할 파일의 크기의 인덱스
+
+			//file_num에 해당하는 파일의 데이터 크기 추출
+			while(upload_file_size = document.getElementById("filesize" + file_num))
+			{
+				// (type is string) * 1 => 문자열을 숫자로 편법
+				// (type is number) + "" => 숫자을 문자열로 편법
+				// function Number = string to number;
+				// function String = number to string;
+				file_size = file_size + Number(upload_file_size.value);
+				file_num++;
+			}
+
+			if (files_number > 5) //5개 이상의 파일 첨부시
+			{
+				alert('최대 5개의 파일을 첨부할 수 있습니다.');
+				is_error = 1;
+			}
+
+			//에러가 발생하면 아래것은 확인을 안한다.
+			if (is_error == 0) {
+				var sum_of_file_size = 0; //추가로 업로드한 파일이 개수
+				//1 MB = 1024 KB , 1 KB = 1024 B
+				var max_size_of_file = 10 * 1024 * 1024 - file_size;
+
+				for (var i = 0; i < files.length; i++) { 
+					//총 업로드한 파일의 크기 
+					file=files[i]; 
+					sum_of_file_size=sum_of_file_size + file.size;
+				} 
+				if (sum_of_file_size> max_size_of_file) {
+					alert('첨부 파일의 최대용량은 10 MB 입니다.');
+					is_error = 1;
+				}
+			}
+
+			//에러 발생 input - file 초기화한다.
+			if(is_error) { //에러 발생
+
+			} else { //정상 -> 새로운 창에 보내버린다.
+				//현재 수정하는 글의 데이터 수정
+				var postId = document.getElementById("now_post");
+				postId = Number(postId.value);
+
+				//폼의 타켓 이름
+				var pop_title = "aboutfile";
+
+				//<form action="./modifypost.php" method="POST" enctype="multipart/form-data">
+				//폼생성
+				var ToUpload = document.createElement("form");
+				ToUpload.setAttribute("method","POST");
+				ToUpload.setAttribute("enctype","multipart/form-data");
+				ToUpload.target = pop_title; //타겟을 열린 파업창으로 결정한다.
+				ToUpload.setAttribute("action","./saveuploadfile.php");
+				ToUpload.setAttribute("style","display:none;");
+
+
+				//폼에 넣을 다큐먼트 생성 : 현재 수정중인 포스트의 아이디
+				var new_fidden = document.createElement("input");
+				new_fidden.setAttribute("type","hidden");
+				new_fidden.setAttribute("name","npost");
+				new_fidden.setAttribute("value",postId);
+
+				var new_hidden = document.createElement("input");
+				new_hidden.setAttribute("type","hidden");
+				new_hidden.setAttribute("name","filenum");
+				new_hidden.setAttribute("value",now_file);
+
+				//폼에 다큐먼트 추가하기
+				ToUpload.appendChild(new_fidden);
+				ToUpload.appendChild(new_hidden);
+				ToUpload.appendChild(fileInput.cloneNode());
+
+				document.getElementById("show_upload_file").appendChild(ToUpload);
+
+				ToUpload.submit();
+			}
+		}
+
+		function myReload()
+		{
+			$('#file_input').load(window.location.href + ' #file_input');
+		}
+	</script>
+	
+	<script type="text/javascript">
+		function delete_file(button_id){
+
+			//폼의 타겟
+			var delete_title = "aboutfile";
+
+			window.open("", delete_title,"width:100px,heigth:100px");
+
+			//현재 수정하는 글의 인덱스
+			var postId = document.getElementById("now_post");
+			postId = Number(postId.value);
+
+			var ToDelete = document.createElement("form");
+			ToDelete.setAttribute("method","GET");
+			ToDelete.target = delete_title; 
+			ToDelete.setAttribute("action","./deleteuploadfile.php");
+			ToDelete.setAttribute("style","display:none;");
+
+			//삭제할 업로드한 파일번호
+			var start = button_id.indexOf("n");
+			var end = button_id.indexOf(".", start+1);
+			var upload_file_No = Number(button_id.substring(start+1, end));
+
+			//폼에 넣을 다큐먼트 생성 : 현재 수정중인 포스트의 아이디
+			var hidden_id = document.createElement("input");
+			hidden_id.setAttribute("type","hidden");
+			hidden_id.setAttribute("name","npost");
+			hidden_id.setAttribute("value",postId);
+			
+			//폼에 넣을 다큐먼트 생성 : 삭제할 업로드한 파일번호
+			var hidden_num = document.createElement("input");
+			hidden_num.setAttribute("type","hidden");
+			hidden_num.setAttribute("name","filenum");
+			hidden_num.setAttribute("value",upload_file_No);
+			
+			//폼에 다큐먼트 추가하기
+			ToDelete.appendChild(hidden_id);
+			ToDelete.appendChild(hidden_num);
+			
+			document.getElementById("show_upload_file").appendChild(ToDelete);
+			
+			ToDelete.submit();
+		}
+	</script>
+</head>
+<body>
+	<?php
+		   $data = showpost("select * from postlist where No = $index");
+	       $data = $data->fetch_array();
+	?>
+	<center>
+	<div id="contents">
+			<form action="./modifypost.php" method="POST" enctype="multipart/form-data"> 
+			<br>
+			<input type="hidden" id="now_post" name="idx" value="<?php echo $index; ?>" >
+			<input type="hidden" name="page" value="<?php echo $page; ?>" >
+			<?php
+			if(isset($_GET[term]))
+			{
+				echo "<input type='hidden' name='term' value='".$term."'>";
+				echo "<input type='hidden' name='search' value='".$seek."'>";
+			}
+			?>
+			<input type="text" name="title" placeholder="제목" value="<?php echo $data['title']; ?>"  maxlength="100" style="width:900px;max-width: 80%;">
+			<br> <br>
+			<textarea id="test" name="content" maxlength="900" placeholder="내용을 입력하세요." style="width:900px; max-width: 80%; height: 500px; max-width: 80%; resize:none;"><?php echo $data['contents']; ?></textarea>
+			<br>
+
+			<div id="file_input" class="file_input" style="margin-top: 10px;">
+				<?php 
+				$upload_file = showpost("select * from uploadfile where postnum = $index");
+				$count_file = $upload_file->num_rows; 
+				?>
+				<label> File Upload <input type="file" id="user_will_upload_file" name="userfile[]" accept="image/*" multiple onchange="javascript:file_change(<?php echo $count_file; ?>)"> </label>	
+				<br> <br>
+				<div id="show_upload_file">
+					<div id="show_file_input" class="show_file_input_uploaded">
+						<?php if($count_file){ ?>
+							<?php while($info = $upload_file->fetch_array()){ 
+								echo $info['ordernum'].') ';
+							?>
+							<input type="hidden" id="filesize<?php echo $info['ordernum']; ?>" value="<?php echo $info['filesize'] ?>">
+							<input type="text" value="<?php echo $info['filename']; ?>" style="width: 300px; max-width: 100%; height: 20px; max-height: 100%; font-size: 12px;" readonly>
+							<input type="button" id="button<?php echo $info['ordernum']; ?>." value="삭제" onclick="javascript:delete_file(this.id)">
+							<br>
+							<?php } ?>
+						<?php }  ?>
+					</div>
+				</div>
+			</div>
+			<br>
+
+			<input type="submit" value="저장" style="width: 100px; max-width: 100%;">
+			<input type="button" value="취소" style="width: 100px; max-width: 100%;" onclick="history.back()">
+		</form>
+		<iframe name="aboutfile" style="width:0px; height: 0px; border: 0px">유감이요. 당신은 해당 기능을 사용못합니다.</iframe>
+	</div>
+	</center>
+</body>
+</html>

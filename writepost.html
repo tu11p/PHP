@@ -1,0 +1,148 @@
+<?php 
+	session_start();
+
+	if(!isset($_SESSION['islogin']))
+	{
+		echo "<script> alert('로그인이 필요합니다.'); location.href='./homepage.html'; </script>";
+		exit;
+	}
+
+	$mode = $_GET[mode];
+?>
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<script src="./aboutupload.js"></script> <!-- for upload file check -->
+	<link rel="stylesheet" type="text/css" href="./uploadcss.css" />
+	<title> <?php if($mode==2){ echo "답글 작성하기";}else{ echo "게시글 작성하기";} ?> </title>
+	<style type="text/css">
+		div#contents {
+			border: 1px;
+			background-color: #F3F0F0;
+			width: 80%;
+			height: 1000;
+			margin-left: auto;
+			margin-right: auto;
+		}
+	</style>
+
+	<script>
+		$(document).ready(function () {
+
+			$("input[type=file]").change(function () {
+
+				var fileInput = document.getElementById("user_will_upload_file");
+
+				var files = fileInput.files;
+				var file;
+				var is_error = 0;
+
+				/*
+					폼 속에 있는 모든 Child 삭제 
+						  while(formtable.firstChild)
+						  {
+							formtable.removeChild(formtable.firstChild);
+						  }
+				
+				 */
+
+				if (files.length > 5) //5개 이상의 파일 첨부시
+				{
+					alert('최대 5개의 파일을 첨부할 수 있습니다.');
+					is_error = 1;
+				}
+
+				if (is_error == 0) {
+					var sum_of_file_size = 0;
+					//1 MB = 1024 KB , 1 KB = 1024 B
+					var max_size_of_file = 10 * 1024 * 1024;
+
+					for (var i = 0; i < files.length; i++) {      //총 업로드한 파일의 크기
+						file = files[i];
+						sum_of_file_size = sum_of_file_size + file.size;
+					}
+
+					if (sum_of_file_size > max_size_of_file) {
+						alert('첨부 파일의 최대용량은 10 MB 입니다.');
+						is_error = 1;
+					}
+				}
+
+				//에러 발생 input - file 초기화한다.
+				if (is_error) {
+					var file_infor = document.getElementById("user_will_upload_file")
+					var orgParent = file_infor.parentNode;
+					var orgNext = file_infor.nextSibling;
+
+					var tmp = document.createElement('form');
+					tmp.appendChild(file_infor);
+
+					tmp.reset();
+
+					orgParent.insertBefore(file_infor, orgNext);
+				}
+				else{
+					var upload_div = document.getElementById("show_file_input");
+
+					while(upload_div.firstChild)
+					{
+						upload_div.removeChild(upload_div.firstChild);
+					}
+
+					for (var i = 0; i < files.length; i++) {      
+						file = files[i];
+
+						var new_child = document.createElement("input");
+						new_child.setAttribute("type", "text");
+						new_child.setAttribute("readonly","readonly");
+						new_child.setAttribute("value", "  " + (i + 1) + ". " + file.name);
+						new_child.setAttribute("style","width:400px; max-width: 100%; height: 15px; max-height: 100%;");
+
+						upload_div.appendChild(document.createElement("br"));
+						upload_div.appendChild(new_child);
+					}
+				}
+
+			});
+
+		});
+
+	</script>
+</head>
+
+<body>
+	<center>
+		<div id="contents">
+			<form action="./writepost.php" method="POST" enctype="multipart/form-data">
+				<br>
+				<input type="hidden" name="mode" value="<?php echo $mode; ?>">
+				<?php 
+				if($mode == 2 && isset($_GET[npost]))
+				{
+					$npost = $_GET[npost];
+					echo "<input type='hidden' name='npost' value='$npost'>";
+				}
+				?>
+				<input type="text" name="title" placeholder="제목" maxlength="100" style="width:900px;max-width: 80%;">
+				<br> <br>
+				<textarea id="test" name="content" maxlength="900" wrap="virtual" placeholder="내용을 입력하세요."
+					style="width:900px; max-width: 80%; height: 500px; max-width: 80%; resize:none;"></textarea>
+				<br> <br>
+
+				<div id="file_input" class="file_input" style="margin-top: 10px;">
+					<label> File Upload <input type="file" id="user_will_upload_file" name="userfile[]" accept="image/*" multiple> </label>
+					<div id="show_file_input"></div>
+				</div>
+
+				<br> <br>
+				<input type="submit" value="등록" style="width:100px; max-width: 100%;">
+				<input type="button" value="돌아가기" style="width: 100px; max-width: 100%;" onclick="history.back();">
+				<br> <br>
+			</form>
+		</div>
+	</center>
+</body>
+
+</html>
